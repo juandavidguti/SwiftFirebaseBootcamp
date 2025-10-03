@@ -116,5 +116,4 @@ final class ProductsManager {
             .aggregateCount()
     }
 }
-;;;
 
