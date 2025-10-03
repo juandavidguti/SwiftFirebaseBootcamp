@@ -7,17 +7,23 @@
 
 import SwiftUI
 import Firebase
+import GoogleSignIn
 
 @main
 struct SwiftFirebaseBootcampApp: App {
     
+    // Without App Delegate
+//    init() {
+//        FirebaseApp.configure()
+//        print("configure Firebase!")
+//    }
+    
+    // With App delegate
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
                 RootView()
-            }
         }
     }
 }
@@ -28,5 +34,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         print("Configured Firebase!")
         return true
+    }
+    
+    func application(_ app: UIApplication,
+                     open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        // Forward the URL to Google Sign-In to complete the auth flow (needed for some return paths)
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }
