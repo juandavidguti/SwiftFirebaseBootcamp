@@ -8,7 +8,7 @@
 import SwiftUI
 
 @MainActor
-final class SignInEmailViewModel: ObservableObject {
+final class SignInEmailViewModel: ObservableObject, Sendable {
     
     @Published var email = ""
     @Published var password = ""

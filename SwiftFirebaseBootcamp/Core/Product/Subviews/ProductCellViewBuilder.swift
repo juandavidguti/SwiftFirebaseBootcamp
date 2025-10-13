@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ProductCellViewBuilder: View {
+struct ProductCellViewBuilder: View, Sendable {
     
     let productId: String
     @State private var product: Product? = nil

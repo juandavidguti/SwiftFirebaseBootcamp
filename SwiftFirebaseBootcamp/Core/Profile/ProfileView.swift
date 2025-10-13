@@ -6,68 +6,17 @@
 //
 
 import SwiftUI
-
-@MainActor
-final class ProfileViewModel: ObservableObject {
-    
-    @Published private(set) var user: DBUser? = nil
-    
-    func loadCurrentUser() async throws {
-        let authDataResult = try AuthenticationManager.shared.getAuthenticatedUser()
-        self.user = try await UserManager.shared.getUser(userId: authDataResult.uid)
-    }
-    
-    func togglePremiumStatus() {
-        guard let user else { return }
-        let currentValue = user.isPremium ?? false
-        Task {
-            try await UserManager.shared.updateUserPremiumStatus(userId: user.userId,isPremium: !currentValue)
-            self.user = try await UserManager.shared.getUser(userId: user.userId)
-        }
-    }
-    
-    func addUserPreference(text: String) {
-        guard let user else {return}
-        Task {
-            try await UserManager.shared.addUserPreferences(userId: user.userId, preference: text)
-            self.user = try await UserManager.shared.getUser(userId: user.userId)
-        }
-    }
-    
-    func removeUserPreference(text: String) {
-        guard let user else {return}
-        Task {
-            try await UserManager.shared.removeUserPreferences(userId: user.userId, preference: text)
-            self.user = try await UserManager.shared.getUser(userId: user.userId)
-        }
-    }
-    
-    func addFavoriteMovie() {
-        guard let user else {return}
-        let movie = Movie(id: "1", title: "Avatar 2", isPopular: true)
-        Task {
-            try await UserManager.shared
-                .addFavoriteMovie(userId: user.userId, movie: movie)
-            self.user = try await UserManager.shared.getUser(userId: user.userId)
-        }
-    }
-    
-    func removeFavoriteMovie() {
-        guard let user else {return}
-        Task {
-            try await UserManager.shared.removeFavoriteMovie(userId: user.userId)
-            self.user = try await UserManager.shared.getUser(userId: user.userId)
-        }
-    }
-    
-}
-
+import PhotosUI
+import Shimmer
 
 struct ProfileView: View {
     
     @StateObject private var viewModel = ProfileViewModel()
     @Binding var showSignInView: Bool
     let preferencesOptions: [String] = ["Sports","Movies","Books"]
+    @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var url: URL? = nil
+    @State private var isShimmering: Bool = true
     
     private func preferenceIsSelected(text: String) -> Bool {
         viewModel.user?.preferences?.contains(text) == true
@@ -117,11 +66,43 @@ struct ProfileView: View {
                     Text(
                         "Favorite Movie: \((user.favoriteMovie?.title ?? ""))")
                 }
+                // calling function
+                PhotosPicker(selection: $selectedItem, matching: .images, preferredItemEncoding: .automatic, photoLibrary: .shared()) {
+                    Text("Select a photo")
+                }
+                
+                if let urlString = viewModel.user?.profileImagePathUrl, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 150, height: 150)
+                            .cornerRadius(10)
+                    } placeholder: {
+                        ShimmerAvatar(isShimmering: $isShimmering)
+                    }
+                } else {
+                    // Simulate loading state even if we don't have permission/URL yet
+                    ShimmerAvatar(isShimmering: $isShimmering)
+                }
+                if viewModel.user?.profileImagePathUrl != nil {
+                    Button("Delete Image") {
+                        viewModel.deleteProfileImage()
+                    }
+                }
             }
         }
+        
         .task {
             try? await viewModel.loadCurrentUser()
+            
         }
+        // observing change of selecteditem state
+        .onChange(of: selectedItem, { _, newValue in
+            if let newValue {
+                viewModel.saveProfileImage(item: newValue)
+            }
+        })
         .navigationTitle("Profile")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -134,6 +115,25 @@ struct ProfileView: View {
                 
             }
         }
+    }
+}
+
+// Helper view for shimmer avatar placeholder
+private struct ShimmerAvatar: View {
+    @Binding var isShimmering: Bool
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(.gray.opacity(0.3))
+            .frame(width: 150, height: 150)
+            .redacted(reason: .placeholder)
+            .shimmering(active: isShimmering)
+            .task {
+                // Simulate a short loading period; then freeze the skeleton (no shimmer)
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                isShimmering = false
+            }
+            .accessibilityLabel("Profile image loading placeholder")
     }
 }
 

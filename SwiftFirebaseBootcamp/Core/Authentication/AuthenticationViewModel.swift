@@ -8,7 +8,7 @@
 import SwiftUI
 
 @MainActor
-final class AuthenticationViewModel: ObservableObject {
+final class AuthenticationViewModel: ObservableObject, Sendable {
         
     func signInGoogle() async throws {
         let helper = SignInGoogleHelper()

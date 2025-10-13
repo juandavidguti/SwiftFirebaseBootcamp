@@ -8,9 +8,10 @@
 import Foundation
 import FirebaseFirestore
 
+@MainActor
 final class ProductsManager {
     
-    @MainActor static let shared = ProductsManager()
+    static let shared = ProductsManager()
     private init () { }
     
     private let productsCollection = Firestore.firestore().collection("products")

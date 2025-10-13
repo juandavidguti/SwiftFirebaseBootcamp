@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 @MainActor
-final class FavoriteViewModel: ObservableObject {
+final class FavoriteViewModel: ObservableObject, Sendable {
     
     @Published private(set) var userFavoriteProducts: [UserFavoriteProduct] = []
     private var cancellables: Set<AnyCancellable> = []
